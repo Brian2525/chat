@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Información del Visitante</title>
+</head>
+<body>
+    <h1>Bienvenido</h1>
+    <p>Por favor, ingresa tu nombre y correo electrónico para comenzar.</p>
+    <form method="post">
+        {% csrf_token %}
+        <label for="name">Nombre:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+        <label for="email">Correo Electrónico:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+        <button type="submit">Comenzar Chat</button>
+    </form>
+</body>
+</html>
