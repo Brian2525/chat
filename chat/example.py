@@ -1,10 +1,5 @@
 from openai import OpenAI
 import os 
-from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv())
-
-
-API_KEY=os.getenv('OPENAI_API_KEY')
 
 
 ###listar asistentes 
