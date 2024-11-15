@@ -3,18 +3,16 @@ import requests
 from .models import Visitor, Conversation, Message, AssistantDescription
 from .forms import VisitorForm, ChatForm
 from django.http import HttpResponse
-from django.http import JsonResponse
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 import json
 from . import utils
 import os 
-from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv())
+
 from openai import OpenAI
 
-API_KEY=os.getenv('OPENAI_API_KEY')
 
-client = OpenAI(api_key=API_KEY)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 assist=AssistantDescription.objects.get(id=1)
 
 
@@ -214,7 +212,7 @@ def GenerateMessage(text, number):
 
 def sendMessageWhatsapp(data): 
     try: 
-        token = os.getenv('TOKEN_WHATSAPP')
+        token = settings.WHATSAPP_TOKEN
         api_url = "https://graph.facebook.com/v20.0/248148378380644/messages"
         
        

@@ -12,7 +12,12 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
+from decouple import config
+
+
+OPENAI_API_KEY = config("OPENAI_KEY")
+WHATSAPP_TOKEN=config("TOKEN_WHATSAPP")
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

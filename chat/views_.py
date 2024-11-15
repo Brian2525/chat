@@ -4,16 +4,15 @@ from .models import Thread, Message, Visitor
 from django.http import JsonResponse
 import json
 import os 
-from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv())
+from django.conf import settings
+
 
 from openai import OpenAI
 
 
-API_KEY=os.getenv('OPENAI_API_KEY')
 ASSISTANT_ID= os.getenv('ASSIST_ID') 
 
-client = OpenAI(api_key=API_KEY)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 
