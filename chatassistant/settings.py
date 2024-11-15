@@ -14,9 +14,6 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-OPENAI_API_KEY="sk-Maxh5gGsn3pF9L6A_hr4UXsQYB2aUXETuVGZpL8ODeT3BlbkFJZ3DtkTo9Aju-RVVSdSgdEWcVX4Yl7dx6MDOCYQ4rUA"
-
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +28,8 @@ SECRET_KEY = 'django-insecure-z0u)@m+gumnea8jn4wpdceb7t9m&q!2g@*vm)6o+vvq6zbov$y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
+
 ALLOWED_HOSTS = []
 
 
@@ -44,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'chat',
+    'web',
 ]
 
 MIDDLEWARE = [
@@ -125,6 +125,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+MEDIA_URL = '/media/'
+
+
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

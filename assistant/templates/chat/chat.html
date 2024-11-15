@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat con OpenAI</title>
+</head>
+<body>
+    <h1>Hola, {{ visitor.name }}</h1>
+    <h2>Conversación</h2>
+    <div>
+        {% for message in messages %}
+            <p><strong>{{ message.role|capfirst }}:</strong> {{ message.content }}</p>
+        {% endfor %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="message" placeholder="Escribe tu mensaje aquí" required>
+        <button type="submit">Enviar</button>
+    </form>
+</body>
+<script>
+    // ... código existente ...
+
+    // Función para mostrar el indicador de carga
+    function showTypingIndicator() {
+        const chatWindow = document.getElementById('chat-window');
+        const typingElement = document.createElement('p');
+        typingElement.id = 'typing-indicator';
+        typingElement.innerHTML = `<em>Asistente está escribiendo...</em>`;
+        chatWindow.appendChild(typingElement);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // Función para eliminar el indicador de carga
+    function removeTypingIndicator() {
+        const typingElement = document.getElementById('typing-indicator');
+        if (typingElement) {
+            typingElement.parentNode.removeChild(typingElement);
+        }
+    }
+
+    // Modificar la función sendMessage para incluir el indicador de carga
+    function sendMessage(event) {
+        event.preventDefault();
+
+        const messageInput = document.getElementById('message-input');
+        const messageContent = messageInput.value;
+
+        if (!messageContent) return;
+
+        // Actualizar el chat con el mensaje del usuario
+        updateChat('Usuario', messageContent);
+
+        // Limpiar el campo de entrada
+        messageInput.value = '';
+
+        // Mostrar el indicador de carga
+        showTypingIndicator();
+
+        // Crear una solicitud AJAX
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "chat" %}');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', getCSRFToken());
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                removeTypingIndicator();  // Eliminar el indicador de carga
+
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.assistant_reply) {
+                        // Actualizar el chat con la respuesta del asistente
+                        updateChat('Asistente', response.assistant_reply);
+                    } else if (response.error) {
+                        alert('Error: ' + response.error);
+                    }
+                } else {
+                    // Manejar errores
+                    alert('Error al enviar el mensaje. Por favor, inténtalo de nuevo.');
+                }
+            }
+        };
+
+        // Enviar los datos al servidor
+        const data = JSON.stringify({ 'message': messageContent });
+        xhr.send(data);
+    }
+
+    // ... código existente ...
+</script>
+
+
+
+
+</html>

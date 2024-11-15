@@ -11,7 +11,7 @@ from openai import OpenAI
 
 
 API_KEY=os.getenv('OPENAI_API_KEY')
-ASSISTANT_ID= "asst_6tSMEXtaC23I2diV8Z5jdXWX"
+ASSISTANT_ID= os.getenv('ASSIST_ID') 
 
 client = OpenAI(api_key=API_KEY)
 

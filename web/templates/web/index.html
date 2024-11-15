@@ -1,0 +1,61 @@
+
+{% extends 'web/base.html' %}
+
+{% block title %}
+    GPT Assistants
+{% endblock %}
+
+{% block content %}
+
+
+						<div class="inner">
+							<header>
+								<h1>Chat gpt assistants for all <br />
+								</a></h1>
+								<p>Conoce los asistentes de chatgpt que hemos creado para ti. Utilizalos de manera gratuita en tu plan de chatgpt. </p>
+							</header>
+							  <div class="container mt-5">
+        					<h1 class="text-center">Nuestros Proyectos</h1>
+
+        <!-- Filtro por categorías -->
+                            <div class="row my-4">
+                                <div class="col-md-12">
+                                    <form method="GET" action="" class="d-flex justify-content-center">
+                                        <select name="category" class="form-select w-50" onchange="this.form.submit()">
+                                            <option value="">Todas las categorías</option>
+                                            {% for category in categories %}
+                                                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:'s' %}selected{% endif %}>
+                                                    {{ category.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <noscript><button type="submit" class="btn btn-primary">Filtrar</button></noscript>
+                                    </form>
+                                </div>
+                            </div>
+
+        <!-- Mostrar los proyectos usando la estructura solicitada -->
+                            <section class="tiles">
+                                <div class="row">
+                                    {% for project in projects %}
+                                        <article class="style2">
+                                            <span class="image">
+                                                <img src="{{ project.image.url }}" alt="{{ project.title }}" class="img-fluid">
+                                            </span>
+                                            <a href="{{ project.url }}" target="_blank">
+                                                <h2>{{ project.title }}</h2>
+                                                <div class="content">
+                                                    <p>{{ project.description|truncatewords:15 }}</p>
+                                                </div>
+                                            </a>
+                                        </article>
+                                    {% empty %}
+                                        <p class="text-center">No hay proyectos disponibles en esta categoría.</p>
+                                    {% endfor %}
+                                </div>
+                            </section>
+                        </div>
+						
+				
+
+				{% endblock %}

@@ -1,184 +1,238 @@
 from django.shortcuts import render, redirect
-from .models import Thread, Message, Visitor 
+import requests
+from .models import Visitor, Conversation, Message, AssistantDescription
+from .forms import VisitorForm, ChatForm
+from django.http import HttpResponse
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 import json
-import time
-from IPython.display import display
+from . import utils
 import os 
 from dotenv import load_dotenv, find_dotenv
 _ = load_dotenv(find_dotenv())
-
 from openai import OpenAI
 
 API_KEY=os.getenv('OPENAI_API_KEY')
-ASSISTANT_ID= "asst_6tSMEXtaC23I2diV8Z5jdXWX"
 
 client = OpenAI(api_key=API_KEY)
-
-#assistan
-
-def show_json(obj):
-    display(json.loads(obj.model_dump_json()))
-'''
-my_assistant = client.beta.assistants.retrieve("asst_6tSMEXtaC23I2diV8Z5jdXWX")
-show_json(my_assistant)
-
-'''
-
-#Create a thread 
-#Add message to thread 
-#Run the thread 
-
-#add message
-#Run the thread 
-
+assist=AssistantDescription.objects.get(id=1)
 
 
 '''
-
-#thread
-thread = client.beta.threads.create()
-
-
-#Add message to thread 
-message = client.beta.threads.messages.create(
-  thread_id=thread.id,
-  role="user",
-  content="quisiera un pollo ranchero"
-)
-
-#Run the thread 
-
-run = client.beta.threads.runs.create(
-  thread_id=thread.id,
-  assistant_id="asst_6tSMEXtaC23I2diV8Z5jdXWX"
-)
-
-print(run)
-'''
-
-'''
-
 def chat_view(request):
+    # Initialize variables
+    visitor = None
+    messages = []
+    conversation = None
 
-    if request.method == "POST":
-        user_message = request.POST.get('message')
-        
-        # Guardar el mensaje del usuario
-    
-        user_chat = ChatMessage.objects.create(sender=ChatMessage.USER, message=user_message)
+    # Check if visitor is in session
+    visitor_id = request.session.get('visitor_id')
+    if visitor_id:
+        visitor = Visitor.objects.get(id=visitor_id)
 
-        # Enviar el mensaje a ChatGPT
-        response = client.chat.completions.create(
-                                                model="gpt-4o-mini-2024-07-18",
-                                                messages=[{"role": "system", "content":"Eres un asistene inteligente"},
-                                                         {"role": "user", "content": user_message},
-                    ]
-        
-        )   
-        assistant_message = response.choices[0].message.content
-        print(assistant_message)
+    if request.method == 'POST':
+        # Handle Visitor Form
+        if not visitor:
+            visitor_form = VisitorForm(request.POST)
+            if visitor_form.is_valid():
+                visitor = visitor_form.save()
+                request.session['visitor_id'] = visitor.id
+                return redirect('chat_view')
+        else:
+            chat_form = ChatForm(request.POST)
+            if chat_form.is_valid():
+                # Get or create conversation
+                conversation_id = request.session.get('conversation_id')
+                if conversation_id:
+                    conversation = Conversation.objects.filter(conversation_id=conversation_id, visitor=visitor).first()
+                else:
+                    conversation = Conversation(visitor=visitor)
+                    conversation.save()
+                    request.session['conversation_id'] = str(conversation.conversation_id)
+                # Save user's message
+                user_message_content = chat_form.cleaned_data['message']
+                user_message = Message(conversation=conversation, sender='user', content=user_message_content)
+                user_message.save()
+                # Prepare messages for OpenAI API
+                # Prepare messages for OpenAI API
+                messages = Message.objects.filter(conversation=conversation).order_by('timestamp')
+                openai_messages = []
+                # Include the assistant description
+                assistant_description = assist.description
+                
+                
+                if assistant_description:
+                    openai_messages.append({'role': 'system', 'content': assistant_description})
+                else:
+                    openai_messages.append({'role': 'system', 'content': 'You are a helpful assistant.'})
+                for msg in messages:
+                    openai_messages.append({'role': msg.sender, 'content': msg.content})
+                # Call OpenAI API
+                 # Replace with your actual API key
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=openai_messages
+                )
+                
+                respuesta= response.choices[0].message
+                print(respuesta.content)
+                assistant_reply = respuesta.content
+                print(assistant_reply)
 
-        assistant_chat = ChatMessage.objects.create(sender=ChatMessage.ASSISTANT, message=assistant_message)
+                # Save assistant's message
+                assistant_message = Message(conversation=conversation, sender='assistant', content=assistant_reply)
+                assistant_message.save()
+                return redirect('chat_view')
+    else:
+        if visitor:
+            chat_form = ChatForm()
+            conversation_id = request.session.get('conversation_id')
+            if conversation_id:
+                conversation = Conversation.objects.filter(conversation_id=conversation_id, visitor=visitor).first()
+                if conversation:
+                    messages = Message.objects.filter(conversation=conversation).order_by('timestamp')
+        else:
+            visitor_form = VisitorForm()
+            chat_form = None
 
-
-        return JsonResponse({'user_message': user_message, 'assistant_message': assistant_message})
-
-    # Obtener los mensajes anteriores para mostrarlos en la conversación
-    messages = ChatMessage.objects.all().order_by('timestamp')
-    return render(request, 'chat/chat.html', {'messages': messages})
-
-
+    context = {
+        'visitor_form': visitor_form if not visitor else None,
+        'chat_form': chat_form if visitor else None,
+        'messages': messages,
+    }
+    return render(request, 'chat/chat.html', context)
 '''
 
 
-def visitor_info(request):
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-
-        # Verificar si el visitante ya existe
-        visitor, created = Visitor.objects.get_or_create(email=email, defaults={'name': name})
-
-        # Guardar el visitor_id en la sesión
-        request.session['visitor_id'] = visitor.id
-
-        return redirect('chat')
-
-    return render(request, 'chat/visitor_info.html')
 
 
+def GetResponse(text):
+    assistant_description = assist.description
+    try:
+        completion = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                            {"role": "system", 'content':assistant_description},
+                            {"role": "user", "content": text}
+                        ]
+                                        )
+        response= (completion.choices[0].message)
+        respuesta= response.content
+        return respuesta
 
 
-def chat(request):
-   
+    except Exception as exception: 
+        print(exception)
+        return "error" 
 
-    # Verificar si el visitor_id está en la sesión
-    if 'visitor_id' not in request.session:
-        return redirect('visitor_info')
 
-    visitor = Visitor.objects.get(id=request.session['visitor_id'])
 
-    # Verificar si el thread_id está en la sesión
-    if 'thread_id' not in request.session:
-        # Crear un nuevo hilo utilizando la API de OpenAI
-        openai_thread = client.beta.threads.create()
-        thread_id = openai_thread.id  # Asumiendo que el objeto tiene un atributo 'id'
-        # Guardar el hilo en la base de datos
-        thread = Thread.objects.create(visitor=visitor, thread_id=thread_id)
-        # Guardar el thread_id en la sesión
-        request.session['thread_id'] = thread_id
-    else:
-        thread_id = request.session['thread_id']
-        # Obtener el hilo de la base de datos
-        thread = Thread.objects.get(thread_id=thread_id)
 
-    if request.method == 'POST':
-        user_message_content = request.POST.get('message')
 
-        # Enviar el mensaje del usuario al hilo de OpenAI
-        message = client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_message_content
-        )
 
-        # Guardar el mensaje del usuario en la base de datos
-        Message.objects.create(thread=thread, role='user', content=user_message_content)
 
-        # Ejecutar el hilo
-        run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=ASSISTANT_ID,  # Asegúrate de usar el assistant_id correcto
-            stream=True,
-        )
+def verify_token(request):
+    try:
+        if request.method == "GET":
+            accessToken = "153ASD51AD1ASD1545476A68"
+            token = request.GET.get("hub.verify_token")
+            challenge = request.GET.get("hub.challenge")
+
+            # Check if both token and challenge exist, and if token matches
+            if token and challenge and token == accessToken:
+                return HttpResponse(challenge)
+            else:
+                # Return a 400 status code if conditions are not met
+                return HttpResponse(status=400)
+
+    except Exception as e:
+        # Log the error and return 400 status code if any exception occurs
+        print(f"Error: {e}")
+        return HttpResponse(status=400)
+    
+
+
+@csrf_exempt
+def receive_message(request):
+    try: 
+        if request.method == "POST":
+            body = json.loads(request.body)  # Cargar el JSON del cuerpo de la solicitud
+            entry = (body["entry"][0])
+            changes = (entry["changes"][0])
+            value = changes["value"]
+            message = (value["messages"])[0]  # Corrección aquí, asegúrate de que existe "messages"
+            number=message["from"]
+
+            text= utils.TextUser(message)
+            #ProcessMessage(text, number )
+            #print(text)
+            responseGPT=GetResponse(text)
+            print(responseGPT)
+            if responseGPT!="error": 
+                data=utils.TextMessage(responseGPT, number)
+            else: 
+                data=utils.TextMessage("Lo siento ocurrio un problema", number)
+            
+            sendMessageWhatsapp(data)
+
+
+           
+            # Responder con "EVENT_RECEIVED" en el cuerpo de la respuesta
+            return HttpResponse("EVENT_RECEIVED", status=200)
+    
+    except KeyError as e:
+        print(f"Clave no encontrada: {e}")
+        return HttpResponse("EVENT_RECEIVED", status=200)
+    
+    except json.JSONDecodeError:
+        print("Error al decodificar JSON")
+        return HttpResponse("EVENT_RECEIVED", status=400)
+    
+    except Exception as e:
+        print(f"Error inesperado: {e}")
+        return HttpResponse("EVENT_RECEIVED", status=500)
+
+
+
+
+def GenerateMessage(text, number):
+    if "text" in text:
+        data=utils.TextMessage("Text", number)
+    if "format" in text: 
+        data=utils.TextFormatMessage(number)
+    if "image" in text: 
+        data=utils.ImageMessage(number)
+    if "audio" in text: 
+        data=utils.AudioMessage(number)
+    if "document" in text: 
+        data=utils.DocumentMessage(number)
+    
+     
+    sendMessageWhatsapp (data)
+
+
+
+def sendMessageWhatsapp(data): 
+    try: 
+        token = os.getenv('TOKEN_WHATSAPP')
+        api_url = "https://graph.facebook.com/v20.0/248148378380644/messages"
         
-        # Obtener la respuesta del asistente
-        thread_messages = client.beta.threads.messages.list(thread_id, order="asc" )
-        thread_messages_list = list(thread_messages)
-        # Procesar los mensajes
+       
         
-        for m in thread_messages_list:
-            role = m.role
-            content = m.content[0].text.value
-            # Verifica si el mensaje ya está en la base de datos para evitar duplicados
-            if not Message.objects.filter(thread=thread, role=role, content=content).exists():
-               Message.objects.create(thread=thread, role=role, content=content)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
         
-        
-        
+        response = requests.post(api_url, data=json.dumps(data), headers=headers)
 
+        if response.status_code == 200:
+            return True 
         
-        '''
-        Message.objects.create(thread=thread, role=m.role, content=assistant_reply_content)
-        '''    
+        print(f"Error en la respuesta: {response.status_code} - {response.text}")
+        return False 
+    
+    except Exception as exception: 
+        print(f"Error al enviar el mensaje de WhatsApp: {exception}")
+        return False
 
-        # Obtener todos los mensajes para mostrar
-        messages = Message.objects.filter(thread=thread).order_by('created_at')
-
-        return render(request, 'chat/chat.html', {'messages': messages, 'visitor': visitor})
-
-    else:
-        # En caso de GET, mostrar los mensajes existentes
-        messages = Message.objects.filter(thread=thread).order_by('created_at')
-        return render(request, 'chat/chat.html', {'messages': messages, 'visitor': visitor})

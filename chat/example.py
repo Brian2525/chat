@@ -1,7 +1,12 @@
 from openai import OpenAI
+import os 
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
 
-client = OpenAI(api_key="sk-Maxh5gGsn3pF9L6A_hr4UXsQYB2aUXETuVGZpL8ODeT3BlbkFJZ3DtkTo9Aju-RVVSdSgdEWcVX4Yl7dx6MDOCYQ4rUA"
-)
+
+API_KEY=os.getenv('OPENAI_API_KEY')
+
+
 ###listar asistentes 
 '''
 my_assistants = client.beta.assistants.list(
@@ -34,23 +39,26 @@ print(my_assistant)
 print(message_thread)
 '''
 
-
+'''
 my_thread = client.beta.threads.retrieve("thread_N5C8zAuG5Keij5MejKkjDM96")
 print(my_thread)
-
 '''
+
+
 completion = client.chat.completions.create(
     model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {
             "role": "user",
-            "content":  "como puedo guardar la respuesta de chatgpt api en un modelo de django, explicame paso a paso"
+            "content":  "quiero que me digas hola en ingles"
         }
     ]
 )
 
 
 respuesta= completion.choices[0].message
+respuesta_larga=completion.choices[0]
 print(respuesta)
-'''
+print(respuesta.content)
+print(respuesta_larga)
