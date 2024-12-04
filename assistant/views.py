@@ -2,18 +2,19 @@ from django.shortcuts import render, redirect
 #from .models import Thread, Message, Visitor 
 from django.http import JsonResponse
 import json
-import time
 from IPython.display import display
-import os 
-from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv())
+import os
+from django.conf import settings
+
+
 
 from openai import OpenAI
 
-API_KEY=os.getenv('OPENAI_API_KEY')
+print(settings.OPENAI_API_KEY)
+
+#client = OpenAI(api_key=settings.OPENAI_API_KEY)
 ASSISTANT_ID= "asst_6tSMEXtaC23I2diV8Z5jdXWX"
 
-client = OpenAI(api_key=API_KEY)
 
 #assistan
 
@@ -64,6 +65,7 @@ message_retrieve = client.beta.threads.messages.retrieve(
   thread_id=thread.id,
 )
 print(message_retrieve)
+
 
 
 

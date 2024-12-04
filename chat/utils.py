@@ -30,6 +30,8 @@ def TextUser(message):
         return ""
     
 
+
+
 def TextMessage(text, number): 
         data= {
             "messaging_product": "whatsapp",
@@ -42,7 +44,7 @@ def TextMessage(text, number):
             }
         }
         return data 
-        
+    
       
 def TextFormatMessage(number): 
         data= {

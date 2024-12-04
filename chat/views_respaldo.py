@@ -132,11 +132,11 @@ def GetResponse(text):
 
 
 
-@csrf_exempt
-def handle_request(request):
+
+#GET 
+def verify_token(request):
     try:
         if request.method == "GET":
-            # Lógica de verify_token
             accessToken = "153ASD51AD1ASD1545476A68"
             token = request.GET.get("hub.verify_token")
             challenge = request.GET.get("hub.challenge")
@@ -148,48 +148,62 @@ def handle_request(request):
                 # Return a 400 status code if conditions are not met
                 return HttpResponse(status=400)
 
-        elif request.method == "POST":
-            # Lógica de receive_message
-            print("intenta")
+    except Exception as e:
+        # Log the error and return 400 status code if any exception occurs
+        print(f"Error: {e}")
+        return HttpResponse(status=400)
+    
+
+#POST
+@csrf_exempt
+def receive_message(request):
+    try:
+        print("intenta")
+        if request.method == "POST":
+            print("si POST ")
             body = json.loads(request.body)  # Cargar el JSON del cuerpo de la solicitud
             entry = (body["entry"][0])
             changes = (entry["changes"][0])
             value = changes["value"]
             message = (value["messages"])[0]  # Corrección aquí, asegúrate de que existe "messages"
-            number = message["from"]
+            number=message["from"]
             print(number)
+            
 
-            text = utils.TextUser(message)
-            # ProcessMessage(text, number )
+            text= utils.TextUser(message)
+            #ProcessMessage(text, number )
             print(text)
-            responseGPT = GetResponse(text)
+            responseGPT=GetResponse(text)
             print(responseGPT)
-            if responseGPT != "error":
-                data = utils.TextMessage(responseGPT, number)
+            if responseGPT!="error": 
+                data=utils.TextMessage(responseGPT, number)
                 print(data)
-            else:
-                data = utils.TextMessage("Lo siento ocurrio un problema", number)
+            else: 
+                data=utils.TextMessage("Lo siento ocurrio un problema", number)
+            
 
             sendMessageWhatsapp(data)
 
+
+           
             # Responder con "EVENT_RECEIVED" en el cuerpo de la respuesta
             return HttpResponse("EVENT_RECEIVED", status=200)
-
-        else:
-            # Manejo de otros métodos no permitidos
-            return HttpResponse("Method Not Allowed", status=405)
-
+         
+        return HttpResponse("Method Not Allowed", status=405)
+    
     except KeyError as e:
         print(f"Clave no encontrada: {e}")
         return HttpResponse("EVENT_RECEIVED", status=200)
-
+    
     except json.JSONDecodeError:
         print("Error al decodificar JSON")
         return HttpResponse("EVENT_RECEIVED", status=400)
-
+    
     except Exception as e:
         print(f"Error inesperado: {e}")
         return HttpResponse("EVENT_RECEIVED", status=500)
+
+
 
 
 def GenerateMessage(text, number):
